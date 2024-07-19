@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #388380d7;
+      }
+      input,
+      button {
+        height: 35px;
+        width: 200px;
+        padding: 10px;
+        margin: 5px;
+        outline: none;
+        font-size: 14px;
+        border-radius: 5px;
+        border: none;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: 550;
+        background: transparent;
+        box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.4);
+      }
+      input::placeholder {
+        color: #000;
+        font-weight: 550;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .inputDetail {
+        display: none;
+        background: transparent;
+        margin: 10px;
+        padding: 10px;
+        height: 600px;
+        width: 300px;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.4);
+        font-size: 16px;
+        font-weight: 550;
+      }
+
+      .inputDetail img {
+        height: 100px;
+        width: 100px;
+        border-radius: 50%;
+      }
+
+      .inputDetail.hide {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <form action="Reset">
+      <input
+        type="text"
+        class="fet"
+        placeholder="Enter User Name"
+        autofocus
+        name="User_name"
+      />
+      <input type="text" class="Number" placeholder="Enter Mobile Number" />
+      <input type="text" class="capcha" placeholder="Enter Capcha Code" />
+      <br />
+      <input type="button" value="Click" class="btn" />
+      <button type="reset" onclick="numReset()">Reset</button>
+      <input type="file" name="" id="" class="photo" />
+      <span>Capcha Code = <span id="code"></span></span>
+      <!-- <input type="datetime-local"> -->
+    </form>
+
+    <div class="inputDetail">
+      <!-- <input type="image" src="https://i.sstatic.net/myTUS.jpg?s=64" alt="" /> -->
+      <img class="getphoto" src="" alt="Hello" />
+      <p>User Name : <span id="inputText"></span></p>
+      <p>Phone Number : <span id="inputText2"></span></p>
+      <!-- <input type="file" name="" id=""> -->
+    </div>
+  </body>
+  <script>
+    let input = document.querySelector(".fet");
+    let input2 = document.querySelector(".Number");
+    let btn = document.querySelector(".btn");
+    let input3 = document.querySelector(".capcha");
+    let code = document.querySelector("#code");
+    let inputText = document.querySelector("#inputText");
+    let inputDetail = document.querySelector(".inputDetail");
+    let photo = document.querySelector(".photo");
+    let getphoto = document.querySelector(".getphoto");
+    // let photoValue = photo.value;
+    let User_name = [
+      "@pavangupta07",
+      "@omprakash08",
+      "@prakash78",
+      "@mropgupts97",
+    ];
+    let Number = ["9755019581", "7016679098", "9584098077", "9630001511"];
+    let num = Math.floor(Math.random() * 9000);
+    function numReset() {
+      if (num > 0) {
+        num += 1010;
+        code.innerHTML = `${num}`;
+      }
+      inputDetail.classList.remove("hide");
+    }
+    numReset();
+    
+    input.onkeypress,
+    setInterval(() => {
+      inputText.innerHTML = input.value;
+    }),
+    1000;
+    input2.onkeypress,
+    setInterval(() => {
+      inputText2.innerHTML = input2.value;
+    }),
+    1000;
+    
+    btn.addEventListener("click", () => {
+      if (input.value == "" || input2.value == "" || input3.value == "") {
+        alert("Place Fill The All Input Box");
+      } else if (
+        input.value == `${User_name[0]}` &&
+        input2.value == `${Number[0]}` &&
+        input3.value == `${num}`
+      ) {
+        alert("Sucssesful");
+        getphoto.src = photo.value;
+        inputDetail.classList.toggle("hide");
+      } else {
+        alert(" Wroung User Name And Number Try again");
+      }
+    });
+  </script>
+</html>

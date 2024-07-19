@@ -1,0 +1,4 @@
+{
+  "watch": ["code.cd", "Classes/", "index.js"],
+  "ext": "js, cd"
+}

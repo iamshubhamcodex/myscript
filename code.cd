@@ -1,0 +1,9 @@
+vari pawan = 10;
+vari shubham = 50;
+pawan = 60.4;
+vari text = "string\na"
+shubham = 50;
+vari bool = true
+vari undef = null;
+vari newVar;
+vari char = 'a'
