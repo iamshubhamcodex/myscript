@@ -45,6 +45,18 @@ class Tokenizer {
         continue;
       }
 
+      if (char === "/" && this.peek() === "-") {
+        this.advance(); // consume '-'
+        this.tokenizeBlockComment();
+        continue;
+      }
+
+      if (char === "/" && this.peek() === "/") {
+        this.advance(); // consume second '/'
+        this.tokenizeLineComment();
+        continue;
+      }
+
       if (char === ";" || char === "\n") {
         tokens.push({ type: "symbol", value: ";" });
         continue;
@@ -59,8 +71,21 @@ class Tokenizer {
         char === "(" ||
         char === ")" ||
         char === "{" ||
-        char === "}"
+        char === "}" ||
+        char === "<" ||
+        char === ">" ||
+        char === "!" ||
+        char === "|" ||
+        char === "&"
       ) {
+        if (["<", ">", "=", "!"].includes(char) && this.peek() === "=") {
+          tokens.push({ type: "symbol", value: char + this.advance() });
+          continue;
+        }
+        if (["&", "|"].includes(char) && this.peek() === char) {
+          tokens.push({ type: "symbol", value: char + this.advance() });
+          continue;
+        }
         tokens.push({ type: "symbol", value: char });
         continue;
       }
@@ -70,12 +95,21 @@ class Tokenizer {
         continue;
       }
 
-      if (/[a-zA-Z]/.test(char)) {
+      if (/[a-zA-Z_]/.test(char)) {
         let identifier = char;
-        while (!this.isEOF() && /[a-zA-Z0-9]/.test(this.peek())) {
+        while (!this.isEOF() && /[a-zA-Z0-9_]/.test(this.peek())) {
           identifier += this.advance();
         }
-        tokens.push({ type: "identifier", value: identifier });
+        if (
+          identifier === "if" ||
+          identifier === "else" ||
+          identifier === "elseif" ||
+          identifier === "switch"
+        ) {
+          tokens.push({ type: "keyword", value: identifier });
+        } else {
+          tokens.push({ type: "identifier", value: identifier });
+        }
         continue;
       }
 
@@ -83,6 +117,15 @@ class Tokenizer {
         let number = char;
         while (!this.isEOF() && /[0-9.]/.test(this.peek())) {
           number += this.advance();
+        }
+        if (number.split(".").length > 2) {
+          throw new UnexpectedCharacterError(
+            `Invalid number format '${number}'`,
+            this.row,
+            this.col,
+            this.input,
+            this.filename
+          );
         }
         tokens.push({ type: "number", value: number });
         continue;
@@ -93,7 +136,7 @@ class Tokenizer {
         this.row,
         this.col,
         this.input,
-        __filename
+        this.filename
       );
     }
     return tokens;
@@ -107,17 +150,15 @@ class Tokenizer {
         if (charArray.length === 1) {
           return { type: "character", value: charArray[0] };
         }
-        return { type: "string", value: charArray };
+        return { type: "string", value: charArray.join("") };
       }
       if (char === "\\") {
         let nextChar = this.advance();
-
         if (nextChar in StringEscapeMap) {
           charArray.push(StringEscapeMap[nextChar]);
         } else {
           throw new UnexpectedCharacterError(
             `Invalid escape sequence: \\${nextChar}`,
-            nextChar,
             this.row,
             this.col,
             this.input,
@@ -130,12 +171,35 @@ class Tokenizer {
     }
     throw new UnexpectedCharacterError(
       "Unterminated string",
-      "",
       this.row,
       this.col,
       this.input,
       this.filename
     );
   }
+
+  tokenizeBlockComment() {
+    while (!this.isEOF()) {
+      let char = this.advance();
+      if (char === "-" && this.peek() === "/") {
+        this.advance(); // consume '/'
+        return;
+      }
+    }
+    throw new UnexpectedCharacterError(
+      "Unterminated comment",
+      this.row,
+      this.col,
+      this.input,
+      this.filename
+    );
+  }
+
+  tokenizeLineComment() {
+    while (!this.isEOF() && this.peek() !== "\n") {
+      this.advance();
+    }
+  }
 }
+
 module.exports = Tokenizer;

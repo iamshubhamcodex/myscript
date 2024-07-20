@@ -2,25 +2,33 @@ const {
   VariableNotDefinedError,
   VariableAlreadyExistsError,
   UnknownExpressionError,
+  UnknownOperatorError,
 } = require("./Error");
 
 class Interpreter {
-  constructor(ast, input, filename) {
+  constructor(ast, input, filename, logger) {
     this.ast = ast;
     this.env = {};
-    this.row = 1;
-    this.col = 1;
+    this.row = 0;
+    this.col = 0;
     this.input = input;
     this.filename = filename;
+    this.logger = logger;
   }
 
-  findColumnIndex(name) {
-    let currLine = this.input.split("\n")[this.row + 1];
-    return currLine.indexOf("=") + currLine.split("=")[1].indexOf(name) + 2;
+  findColumnIndex(name, variableDeclaration) {
+    let currLine = this.input.split("\n")[this.row];
+    if (variableDeclaration)
+      return currLine.indexOf("=") + currLine.split("=")[1].indexOf(name) + 2;
+    return currLine.indexOf(name) + 1;
   }
 
   evaluate(node) {
     switch (node.type) {
+      case "IfStatement":
+        return this.evaluateIfStatement(node);
+      case "SwitchStatement":
+        return this.evaluateSwitchStatement(node);
       case "VariableDeclaration":
         if (node.name in this.env) {
           throw new VariableAlreadyExistsError(
@@ -99,8 +107,26 @@ class Interpreter {
             return left * right;
           case "/":
             return left / right;
+          case ">":
+            return left > right;
+          case "<":
+            return left < right;
+          case "==":
+            return left == right;
+          case "!=":
+            return left != right;
+          case "&&":
+            return left && right;
+          case "||":
+            return left || right;
           default:
-            throw new Error(`Unknown operator: ${node.operator}`);
+            throw new UnknownOperatorError(
+              `Unknown operator: ${node.operator}`,
+              this.row,
+              this.findColumnIndex(node.operator),
+              this.input,
+              this.filename
+            );
         }
 
       default:
@@ -114,6 +140,28 @@ class Interpreter {
     }
   }
 
+  evaluateIfStatement(node) {
+    if (this.evaluateExpression(node.condition)) {
+      this.executeBlock(node.consequent);
+    } else if (node.alternate) {
+      if (node.alternate.type === "IfStatement") {
+        this.evaluateIfStatement(node.alternate);
+      } else {
+        this.executeBlock(node.alternate);
+      }
+    }
+  }
+
+  evaluateSwitchStatement(node) {
+    // Similar evaluation logic for switch
+  }
+
+  executeBlock(block) {
+    for (let statement of block) {
+      this.evaluate(statement);
+    }
+  }
+
   execute() {
     this.ast.forEach((node) => {
       if (node.type === "LineTerminator") {
@@ -121,11 +169,12 @@ class Interpreter {
         this.row++;
       } else if (
         node.type === "VariableDeclaration" ||
-        node.type === "AssignmentExpression"
+        node.type === "AssignmentExpression" ||
+        node.type === "IfStatement"
       ) {
         this.evaluate(node);
       } else {
-        console.log(this.evaluate(node));
+        this.logger(this.evaluate(node));
       }
     });
   }

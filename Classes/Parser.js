@@ -43,13 +43,76 @@ class Parser {
 
   parseStatement() {
     const token = this.peek();
-    if (token.type === "identifier" && token.value === "vari") {
+    if (token.type === "keyword") {
+      switch (token.value) {
+        case "if":
+          return this.parseIfStatement();
+        case "switch":
+          return this.parseSwitchStatement();
+        default:
+          throw new UnknownExpressionError(
+            `Unknown keyword: ${token.value}`,
+            this.row,
+            this.col,
+            this.input,
+            this.filename
+          );
+      }
+    } else if (token.type === "identifier" && token.value === "vari") {
       return this.parseVariableDeclaration();
     } else if (token.type === "identifier") {
       return this.parseAssignmentOrExpression();
     } else {
       return this.parseExpression();
     }
+  }
+
+  parseIfStatement() {
+    this.advance(); // consume 'if'
+    this.advance(); // consume '('
+    const condition = this.parseExpression();
+    this.advance(); // consume ')'
+    this.advance(); // consume '{'
+    const consequent = this.parseBlock();
+    let alternate = null;
+
+    if (
+      !this.isEOF() &&
+      this.peek().type === "keyword" &&
+      this.peek().value === "else"
+    ) {
+      this.advance(); // consume 'else'
+      if (this.peek().value === "if") {
+        alternate = this.parseIfStatement();
+      } else {
+        this.advance(); // consume '{'
+        alternate = this.parseBlock();
+      }
+    }
+
+    return {
+      type: "IfStatement",
+      condition: condition,
+      consequent: consequent,
+      alternate: alternate,
+    };
+  }
+
+  parseSwitchStatement() {
+    // Similar parsing logic for switch
+  }
+
+  parseBlock() {
+    const body = [];
+    while (
+      !this.isEOF() &&
+      this.peek().type !== "symbol" &&
+      this.peek().value !== "}"
+    ) {
+      body.push(this.parseStatement());
+    }
+    this.advance(); // consume '}'
+    return body;
   }
 
   parseVariableDeclaration() {
@@ -110,7 +173,49 @@ class Parser {
           return { type: "NullLiteral", value: this.advance().value };
       }
     }
-    return this.parseAddition();
+    return this.parseLogical();
+  }
+
+  parseComparison() {
+    let node = this.parseAddition();
+
+    while (
+      !this.isEOF() &&
+      this.peek().type === "symbol" &&
+      ["<", "<=", ">", ">=", "==", "!="].includes(this.peek().value)
+    ) {
+      let operator = this.advance().value;
+      let right = this.parseAddition();
+      node = {
+        type: "BinaryExpression",
+        operator: operator,
+        left: node,
+        right: right,
+      };
+    }
+
+    return node;
+  }
+  
+  parseLogical() {
+    let node = this.parseComparison();
+
+    while (
+      !this.isEOF() &&
+      this.peek().type === "symbol" &&
+      ["&&", "||"].includes(this.peek().value)
+    ) {
+      let operator = this.advance().value;
+      let right = this.parseComparison();
+      node = {
+        type: "LogicalExpression",
+        operator: operator,
+        left: node,
+        right: right,
+      };
+    }
+
+    return node;
   }
 
   parseAddition() {
@@ -162,6 +267,10 @@ class Parser {
       return { type: "NumericLiteral", value: parseFloat(token.value) };
     } else if (token.type === "identifier") {
       return { type: "Identifier", name: token.value };
+    } else if (token.type === "symbol" && token.value === "("){
+      let node = this.parseExpression();
+      this.advance(); // consume ')'
+      return node
     }
 
     throw new Error(`Unexpected token: ${token.value}`);

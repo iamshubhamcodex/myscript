@@ -23,6 +23,10 @@ class Runner {
     }
   }
 
+  logger(...args) {
+    console.log("PL >", ...args);
+  }
+
   run() {
     try {
       this.input = this.readFromFile();
@@ -37,7 +41,7 @@ class Runner {
     const ast = this.parse(tokens);
     const interpreter = this.interpret(ast);
 
-    console.log(interpreter.env);
+    Object.keys(interpreter.env).length !== 0 && this.logger(interpreter.env);
   }
 
   tokenize() {
@@ -51,17 +55,22 @@ class Runner {
   }
 
   interpret(ast) {
-    const interpreter = new Interpreter(ast, this.input, this.filename);
+    const interpreter = new Interpreter(
+      ast,
+      this.input,
+      this.filename,
+      this.logger
+    );
     interpreter.execute();
 
     return interpreter;
   }
 
   handleError(error) {
-    console.log(error.message);
+    this.logger(error.message);
 
     if (!(error instanceof CustomError)) {
-      console.log(error.stack);
+      this.logger(error.stack);
     }
   }
 }

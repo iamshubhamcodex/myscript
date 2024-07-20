@@ -1,7 +1,7 @@
 class CustomError extends Error {
   constructor(name, message, line, column, input, filename) {
     super(message);
-    this.errorMessage = message
+    this.errorMessage = message;
     this.name = name;
     this.line = line;
     this.column = column;
@@ -80,6 +80,11 @@ class UnknownExpressionError extends CustomError {
     super("UnknownExpressionError", message, line, column, input, filename);
   }
 }
+class UnknownOperatorError extends CustomError {
+  constructor(message, line, column, input, filename) {
+    super("UnknownOperatorError", message, line, column, input, filename);
+  }
+}
 
 module.exports = {
   CustomError,
@@ -88,4 +93,5 @@ module.exports = {
   VariableNameStartWithNumberError,
   VariableNotDefinedError,
   VariableAlreadyExistsError,
+  UnknownOperatorError,
 };
