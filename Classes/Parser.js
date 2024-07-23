@@ -8,37 +8,37 @@ class Parser {
     this.current = 0;
     this.col = 0;
     this.row = 0;
+    this.ast = [];
   }
 
   isEOF() {
     return this.current >= this.tokens.length;
   }
 
-  peek() {
-    return this.tokens[this.current];
+  peek(increment = 0) {
+    return this.tokens[this.current + increment];
   }
 
   advance() {
-    this.col += this.tokens[this.current + 1]?.value?.length;
+    let curr = this.peek(0);
+    let next = this.peek(1);
+    this.col += next?.value?.length;
+
+    if (next && next.value === "\n") {
+      this.row++;
+      this.col = 0;
+
+      this.current += 2;
+      return curr;
+    }
     return this.tokens[this.current++];
   }
 
   parse() {
-    let ast = [];
     while (!this.isEOF()) {
-      ast.push(this.parseStatement());
-      if (
-        !this.isEOF() &&
-        this.peek().type === "symbol" &&
-        this.peek().value === ";"
-      ) {
-        ast.push({ type: "LineTerminator", name: "semicolon", value: ";" });
-        this.advance();
-        this.row++;
-        this.col = 0;
-      }
+      this.ast.push(this.parseStatement());
     }
-    return ast;
+    return this.ast;
   }
 
   parseStatement() {
@@ -99,7 +99,61 @@ class Parser {
   }
 
   parseSwitchStatement() {
-    // Similar parsing logic for switch
+    this.advance(); // consume 'switch'
+    this.advance(); // consume '('
+    const variable = this.parseExpression();
+    this.advance(); // consume ')'
+    this.advance(); // consume '{'
+
+    let caseBody = [];
+
+    while (
+      !this.isEOF() &&
+      !(this.peek().type === "symbol" && this.peek().value === "}")
+    ) {
+      let equalCase = [];
+      let isDefault =
+        this.peek().type === "identifier" && this.peek().value === "default";
+
+      if (isDefault) {
+        this.advance(); // consume 'default'
+        this.advance(); // consume ':'
+
+        equalCase.push("default");
+      } else {
+        this.advance(); // consume 'case'
+
+        equalCase.push(this.parseExpression());
+        this.advance(); // consume ':'
+
+        while (
+          !this.isEOF() &&
+          this.peek().type === "identifier" &&
+          this.peek().value === "case"
+        ) {
+          this.advance(); //consume 'case'
+          equalCase.push(this.parseExpression());
+          this.advance(); // consume ':'
+        }
+      }
+
+      const body = [];
+      while (
+        !this.isEOF() &&
+        !(isDefault
+          ? this.peek().type === "symbol" && this.peek().value === "}"
+          : this.peek().type === "identifier" && this.peek().value === "break")
+      ) {
+        body.push(this.parseStatement());
+      }
+      this.advance(); // consume 'break;'
+      this.advance(); // consume ';'
+      caseBody.push({ equivalent: equalCase, body });
+    }
+    this.advance(); // consume '}'
+
+    this.current = this.tokens.length + 5;
+    return { type: "SwitchStatment", var: variable, caseBody };
   }
 
   parseBlock() {
@@ -131,6 +185,10 @@ class Parser {
     this.advance(); // consume '='
     const valueExpression = haveValue ? this.parseExpression() : undefined;
 
+    this.peek().type === "symbol" &&
+      this.peek().value === ";" &&
+      this.advance(); //consume ';'
+
     return {
       type: "VariableDeclaration",
       name: nameToken.value,
@@ -147,6 +205,11 @@ class Parser {
     ) {
       this.advance(); // consume '='
       const valueExpression = this.parseExpression();
+
+      this.peek().type === "symbol" &&
+        this.peek().value === ";" &&
+        this.advance(); //consume ';'
+
       return {
         type: "AssignmentExpression",
         name: nameToken.value,
@@ -176,27 +239,6 @@ class Parser {
     return this.parseLogical();
   }
 
-  parseComparison() {
-    let node = this.parseAddition();
-
-    while (
-      !this.isEOF() &&
-      this.peek().type === "symbol" &&
-      ["<", "<=", ">", ">=", "==", "!="].includes(this.peek().value)
-    ) {
-      let operator = this.advance().value;
-      let right = this.parseAddition();
-      node = {
-        type: "BinaryExpression",
-        operator: operator,
-        left: node,
-        right: right,
-      };
-    }
-
-    return node;
-  }
-  
   parseLogical() {
     let node = this.parseComparison();
 
@@ -209,6 +251,27 @@ class Parser {
       let right = this.parseComparison();
       node = {
         type: "LogicalExpression",
+        operator: operator,
+        left: node,
+        right: right,
+      };
+    }
+
+    return node;
+  }
+
+  parseComparison() {
+    let node = this.parseAddition();
+
+    while (
+      !this.isEOF() &&
+      this.peek().type === "symbol" &&
+      ["<", "<=", ">", ">=", "==", "!="].includes(this.peek().value)
+    ) {
+      let operator = this.advance().value;
+      let right = this.parseAddition();
+      node = {
+        type: "BinaryExpression",
         operator: operator,
         left: node,
         right: right,
@@ -267,10 +330,10 @@ class Parser {
       return { type: "NumericLiteral", value: parseFloat(token.value) };
     } else if (token.type === "identifier") {
       return { type: "Identifier", name: token.value };
-    } else if (token.type === "symbol" && token.value === "("){
+    } else if (token.type === "symbol" && token.value === "(") {
       let node = this.parseExpression();
       this.advance(); // consume ')'
-      return node
+      return node;
     }
 
     throw new Error(`Unexpected token: ${token.value}`);

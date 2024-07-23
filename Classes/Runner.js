@@ -1,3 +1,4 @@
+const util = require("util");
 const fs = require("fs");
 const Tokenizer = require("./Tokenizer");
 const Parser = require("./Parser");
@@ -36,12 +37,28 @@ class Runner {
     }
   }
 
+  copy(data) {
+    var proc = require("child_process").spawn("pbcopy");
+    proc.stdin.write(data);
+    proc.stdin.end();
+  }
+
+  print(data) {
+    console.log(
+      util.inspect(data, {
+        showHidden: false,
+        depth: null,
+        colors: true,
+      })
+    );
+  }
+
   execute() {
     const tokens = this.tokenize();
     const ast = this.parse(tokens);
-    const interpreter = this.interpret(ast);
-
-    Object.keys(interpreter.env).length !== 0 && this.logger(interpreter.env);
+    this.print(ast);
+    // const interpreter = this.interpret(ast);
+    // Object.keys(interpreter.env).length !== 0 && this.logger(interpreter.env);
   }
 
   tokenize() {

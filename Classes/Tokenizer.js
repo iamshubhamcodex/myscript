@@ -27,6 +27,7 @@ class Tokenizer {
   advance() {
     let curr = this.peek();
     this.current++;
+
     if (curr === "\n") {
       this.row++;
       this.col = 0;
@@ -40,6 +41,16 @@ class Tokenizer {
     let tokens = [];
     while (!this.isEOF()) {
       let char = this.advance();
+
+      if (char === "\n") {
+        tokens.push({ type: "symbol", value: "\n" });
+        continue;
+      }
+
+      if (char === ";") {
+        tokens.push({ type: "symbol", value: ";" });
+        continue;
+      }
 
       if (/\s/.test(char)) {
         continue;
@@ -57,11 +68,6 @@ class Tokenizer {
         continue;
       }
 
-      if (char === ";" || char === "\n") {
-        tokens.push({ type: "symbol", value: ";" });
-        continue;
-      }
-
       if (
         char === "=" ||
         char === "+" ||
@@ -76,7 +82,8 @@ class Tokenizer {
         char === ">" ||
         char === "!" ||
         char === "|" ||
-        char === "&"
+        char === "&" ||
+        char === ":"
       ) {
         if (["<", ">", "=", "!"].includes(char) && this.peek() === "=") {
           tokens.push({ type: "symbol", value: char + this.advance() });
@@ -100,12 +107,7 @@ class Tokenizer {
         while (!this.isEOF() && /[a-zA-Z0-9_]/.test(this.peek())) {
           identifier += this.advance();
         }
-        if (
-          identifier === "if" ||
-          identifier === "else" ||
-          identifier === "elseif" ||
-          identifier === "switch"
-        ) {
+        if (["if", "else", "switch"].includes(identifier)) {
           tokens.push({ type: "keyword", value: identifier });
         } else {
           tokens.push({ type: "identifier", value: identifier });
