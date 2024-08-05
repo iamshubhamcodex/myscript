@@ -111,7 +111,7 @@ class Parser {
       !this.isEOF() &&
       !(this.peek().type === "symbol" && this.peek().value === "}")
     ) {
-      let equalCase = [];
+      let equalCase;
       let isDefault =
         this.peek().type === "identifier" && this.peek().value === "default";
 
@@ -119,41 +119,47 @@ class Parser {
         this.advance(); // consume 'default'
         this.advance(); // consume ':'
 
-        equalCase.push("default");
+        equalCase = "default";
       } else {
         this.advance(); // consume 'case'
 
-        equalCase.push(this.parseExpression());
+        equalCase = this.parseExpression();
         this.advance(); // consume ':'
 
-        while (
-          !this.isEOF() &&
-          this.peek().type === "identifier" &&
-          this.peek().value === "case"
-        ) {
-          this.advance(); //consume 'case'
-          equalCase.push(this.parseExpression());
-          this.advance(); // consume ':'
-        }
+        // while (
+        //   !this.isEOF() &&
+        //   this.peek().type === "identifier" &&
+        //   this.peek().value === "case"
+        // ) {
+        //   this.advance(); //consume 'case'
+        //   equalCase.push(this.parseExpression());
+        //   this.advance(); // consume ':'
+        // }
       }
-
+      let hasBreak = false;
       const body = [];
       while (
         !this.isEOF() &&
         !(isDefault
           ? this.peek().type === "symbol" && this.peek().value === "}"
-          : this.peek().type === "identifier" && this.peek().value === "break")
+          : this.peek().type === "identifier" &&
+            (this.peek().value === "break" ||
+              this.peek().value === "case" ||
+              this.peek().value === "default"))
       ) {
         body.push(this.parseStatement());
       }
-      this.advance(); // consume 'break;'
-      this.advance(); // consume ';'
-      caseBody.push({ equivalent: equalCase, body });
+      if (this.peek().type === "identifier" && this.peek().value === "break") {
+        hasBreak = true;
+        this.advance(); // consume 'break'
+        this.advance(); // consume ';'
+      }
+      caseBody.push({ equivalent: equalCase, body, hasBreak });
     }
     this.advance(); // consume '}'
 
     this.current = this.tokens.length + 5;
-    return { type: "SwitchStatment", var: variable, caseBody };
+    return { type: "SwitchStatement", var: variable, caseBody };
   }
 
   parseBlock() {

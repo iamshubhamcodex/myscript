@@ -56,9 +56,8 @@ class Runner {
   execute() {
     const tokens = this.tokenize();
     const ast = this.parse(tokens);
-    this.print(ast);
-    // const interpreter = this.interpret(ast);
-    // Object.keys(interpreter.env).length !== 0 && this.logger(interpreter.env);
+    const interpreter = this.interpret(ast);
+    Object.keys(interpreter.env).length !== 0 && this.logger(interpreter.env);
   }
 
   tokenize() {

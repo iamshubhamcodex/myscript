@@ -1,12 +1,12 @@
 vari a = 10;
 switch(a){
-  case 10:
-  case 5:
+  case 1:
+  case 8:
     a = 5;
     break;
   case false: 
-    b = 8;
+    a = 8;
     break;
   default: 
-    b = 9;
+    a = 7;
 }

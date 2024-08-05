@@ -20,7 +20,7 @@ class Interpreter {
     let currLine = this.input.split("\n")[this.row];
     if (variableDeclaration)
       return currLine.indexOf("=") + currLine.split("=")[1].indexOf(name) + 2;
-    return currLine.indexOf(name) + 1;
+    return currLine.indexOf(name) !== -1 ? currLine.indexOf(name) + 1 : 1;
   }
 
   evaluate(node) {
@@ -81,7 +81,6 @@ class Interpreter {
         return node.value;
       case "NumericLiteral":
         return node.value;
-
       case "Identifier":
         if (!(node.name in this.env)) {
           throw new VariableNotDefinedError(
@@ -153,6 +152,24 @@ class Interpreter {
   }
 
   evaluateSwitchStatement(node) {
+    let checker = this.evaluateExpression(node.var);
+    let skipCondition = false;
+
+    for (let i = 0; i < node.caseBody.length; i++) {
+      let toCheck =
+        node.caseBody[i].equivalent === "default"
+          ? checker
+          : this.evaluateExpression(node.caseBody[i].equivalent);
+      if (skipCondition || checker === toCheck) {
+        this.executeBlock(node.caseBody[i].body);
+        if (node.caseBody[i].hasBreak) {
+          break;
+        } else {
+          skipCondition = true;
+        }
+      }
+    }
+
     // Similar evaluation logic for switch
   }
 
@@ -170,7 +187,8 @@ class Interpreter {
       } else if (
         node.type === "VariableDeclaration" ||
         node.type === "AssignmentExpression" ||
-        node.type === "IfStatement"
+        node.type === "IfStatement" ||
+        node.type === "SwitchStatement"
       ) {
         this.evaluate(node);
       } else {
