@@ -85,6 +85,11 @@ class UnknownOperatorError extends CustomError {
     super("UnknownOperatorError", message, line, column, input, filename);
   }
 }
+class FunctionAlreadyExists extends CustomError {
+  constructor(message, line, column, input, filename) {
+    super("FunctionAlreadyExists", message, line, column, input, filename);
+  }
+}
 
 module.exports = {
   CustomError,
@@ -94,4 +99,5 @@ module.exports = {
   VariableNotDefinedError,
   VariableAlreadyExistsError,
   UnknownOperatorError,
+  FunctionAlreadyExists
 };

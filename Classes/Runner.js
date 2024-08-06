@@ -57,7 +57,8 @@ class Runner {
     const tokens = this.tokenize();
     const ast = this.parse(tokens);
     const interpreter = this.interpret(ast);
-    Object.keys(interpreter.env).length !== 0 && this.logger(interpreter.env);
+
+    Object.keys(interpreter.env).length !== 0 && this.logger("Environment Variables\n\n", interpreter.env);
   }
 
   tokenize() {

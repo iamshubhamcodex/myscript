@@ -49,6 +49,8 @@ class Parser {
           return this.parseIfStatement();
         case "switch":
           return this.parseSwitchStatement();
+        case "func":
+          return this.parseFunctionDeclaration();
         default:
           throw new UnknownExpressionError(
             `Unknown keyword: ${token.value}`,
@@ -125,16 +127,6 @@ class Parser {
 
         equalCase = this.parseExpression();
         this.advance(); // consume ':'
-
-        // while (
-        //   !this.isEOF() &&
-        //   this.peek().type === "identifier" &&
-        //   this.peek().value === "case"
-        // ) {
-        //   this.advance(); //consume 'case'
-        //   equalCase.push(this.parseExpression());
-        //   this.advance(); // consume ':'
-        // }
       }
       let hasBreak = false;
       const body = [];
@@ -160,6 +152,43 @@ class Parser {
 
     this.current = this.tokens.length + 5;
     return { type: "SwitchStatement", var: variable, caseBody };
+  }
+
+  parseFunctionDeclaration() {
+    this.advance(); // consume 'function'
+    let identifier = this.advance();
+    this.advance(); // consume '('
+
+    const params = [];
+    while (this.peek().type !== "symbol" && this.peek().value !== ")") {
+      params.push(this.advance().value);
+      if (this.peek().type === "symbol" && this.peek().value === ",") {
+        this.advance(); // consume ','
+      }
+    }
+    this.advance(); // consume ')'
+    this.advance(); // consume '{'
+    const body = this.parseFunctionBlock();
+    return { type: "FunctionDeclaration", identifier, body };
+  }
+
+  parseFunctionBlock() {
+    const body = [];
+    while (
+      !this.isEOF() &&
+      this.peek().type !== "symbol" &&
+      this.peek().value !== "}"
+    ) {
+      if (this.peek().type === "identifier" && this.peek().value === "return") {
+        this.advance(); // consume'return'
+        body.push({ type: "ReturnStatement", value: this.parseExpression() });
+        break;
+      }
+
+      body.push(this.parseStatement());
+    }
+    this.advance(); // consume '}'
+    return body;
   }
 
   parseBlock() {
@@ -263,6 +292,9 @@ class Parser {
       };
     }
 
+    this.peek().type === "symbol" &&
+      this.peek().value === ";" &&
+      this.advance();
     return node;
   }
 
@@ -335,6 +367,15 @@ class Parser {
     if (token.type === "number") {
       return { type: "NumericLiteral", value: parseFloat(token.value) };
     } else if (token.type === "identifier") {
+      if (
+        !this.isEOF() &&
+        this.peek().type === "symbol" &&
+        this.peek().value === "("
+      ) {
+        this.advance(); // consume '('
+        this.advance(); // consume ')'
+        return { type: "FunctionExpression", name: token.value };
+      }
       return { type: "Identifier", name: token.value };
     } else if (token.type === "symbol" && token.value === "(") {
       let node = this.parseExpression();

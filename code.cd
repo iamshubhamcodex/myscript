@@ -1,12 +1,5 @@
-vari a = 10;
-switch(a){
-  case 1:
-  case 8:
-    a = 5;
-    break;
-  case false: 
-    a = 8;
-    break;
-  default: 
-    a = 7;
+func myName(){
+  vari b = 9;
+  b = b*5;
 }
+myName() + 1;

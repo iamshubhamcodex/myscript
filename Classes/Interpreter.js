@@ -3,6 +3,7 @@ const {
   VariableAlreadyExistsError,
   UnknownExpressionError,
   UnknownOperatorError,
+  FunctionAlreadyExists,
 } = require("./Error");
 
 class Interpreter {
@@ -25,6 +26,20 @@ class Interpreter {
 
   evaluate(node) {
     switch (node.type) {
+      case "FunctionDeclaration":
+        if (node.identifier.value in this.env) {
+          throw new FunctionAlreadyExists(
+            `Function '${node.identifier.value}' already exists`,
+            this.row,
+            6,
+            this.input,
+            this.filename
+          );
+        }
+        this.env[node.identifier.value] = node.body;
+        break;
+      case "FunctionExpression":
+        return this.evaluateFunction(node);
       case "IfStatement":
         return this.evaluateIfStatement(node);
       case "SwitchStatement":
@@ -64,6 +79,18 @@ class Interpreter {
     }
   }
 
+  evaluateFunction(node) {
+    let functionBody = this.env[node.name];
+    let hasReturn = functionBody[functionBody.length - 1].type === "ReturnStatement";
+    if (hasReturn) {
+      this.executeBlock(functionBody.slice(0, -1));
+      return this.evaluateExpression(functionBody[functionBody.length - 1].value);
+    }else {
+      this.executeBlock(functionBody);
+      return undefined;
+    }
+  }
+
   evaluateString(charArray) {
     let len = charArray.length;
     while (len-- > 0) {}
@@ -71,6 +98,8 @@ class Interpreter {
 
   evaluateExpression(node) {
     switch (node.type) {
+      case "FunctionExpression":
+        return this.evaluateFunction(node);
       case "BooleanLiteral":
         return node.value === "true";
       case "UndefinedLiteral":
@@ -188,7 +217,8 @@ class Interpreter {
         node.type === "VariableDeclaration" ||
         node.type === "AssignmentExpression" ||
         node.type === "IfStatement" ||
-        node.type === "SwitchStatement"
+        node.type === "SwitchStatement" ||
+        node.type === "FunctionDeclaration"
       ) {
         this.evaluate(node);
       } else {

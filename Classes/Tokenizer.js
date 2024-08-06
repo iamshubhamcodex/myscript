@@ -107,7 +107,7 @@ class Tokenizer {
         while (!this.isEOF() && /[a-zA-Z0-9_]/.test(this.peek())) {
           identifier += this.advance();
         }
-        if (["if", "else", "switch"].includes(identifier)) {
+        if (["if", "else", "switch", "func"].includes(identifier)) {
           tokens.push({ type: "keyword", value: identifier });
         } else {
           tokens.push({ type: "identifier", value: identifier });
