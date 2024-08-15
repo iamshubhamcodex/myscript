@@ -1,5 +1,0 @@
-func myName(){
-  vari b = 9;
-  b = b*5;
-}
-myName() + 1;
